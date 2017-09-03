@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+var path = require("path"),
+    fs = require("fs"),
+    glob = require("glob"),
+    tape = require("tape"),
+    eslint = require("eslint"),
+    module = require("module"),
+    module_load = module._load;
+
+var cwd = process.cwd();
+
+module._load = function(request, parent) {
+  return request === "tape" ? tape : module_load.apply(this, arguments);
+};
+
+console.warn(`eslint: index.js src/`);
+
+var cli = new eslint.CLIEngine({configFile: path.resolve(__dirname, "../.eslintrc"), useEslintrc: false}),
+    format = cli.getFormatter(),
+    report = cli.executeOnFiles(["index.js", "src/"]);
+
+if (report.results.some(result => result.errorCount > 0)) {
+  console.log(format(report.results));
+  process.exit(1);
+}
+
+console.warn(`tape: test/**/*-test.js`);
+
+glob.sync("test/**/*-test.js").forEach(function(file) {
+  require(path.join(cwd, file));
+});

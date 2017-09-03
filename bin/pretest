@@ -1,0 +1,53 @@
+#!/usr/bin/env node
+
+// TODO Consolidate preamble code.
+
+var fs = require("fs"),
+    path = require("path"),
+    rimraf = require("rimraf"),
+    rollup = require("rollup");
+
+var cwd = process.cwd(),
+    build = path.join(cwd, "build"),
+    package = require(path.join(cwd, "package.json")),
+    name = package.name,
+    dependencies = package.dependencies || {},
+    globals = {};
+
+var preamble = "// " + (package.homepage || package.name)
+    + " Version " + package.version + "."
+    + " Copyright " + (new Date).getFullYear()
+    + " " + package.author.name + (/\.$/.test(package.author.name) ? "" : ".");
+
+for (var key in dependencies) {
+  if (/^d3-/.test(key)) {
+    globals[key] = "d3";
+  }
+}
+
+rimraf.sync(build);
+fs.mkdirSync(build);
+
+console.warn(`rollup: index.js ↦ build/${name}.js`);
+
+rollup.rollup({
+  input: "index.js",
+  external: Object.keys(globals)
+}).then(function(bundle) {
+  return bundle.generate({
+    banner: preamble,
+    globals: globals,
+    extend: true,
+    format: "umd",
+    name: "d3"
+  });
+}).then(function(bundle) {
+  return new Promise(function(resolve, reject) {
+    fs.writeFile(path.join("build", `${name}.js`), bundle.code, "utf8", function(error) {
+      if (error) return reject(error);
+      else resolve();
+    });
+  });
+}).catch(function(error) {
+  console.error(error.stack);
+});

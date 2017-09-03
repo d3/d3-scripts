@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+// TODO Run the test script before prepublishing.
+// TODO Consolidate preamble code.
+
+var fs = require("fs"),
+    path = require("path"),
+    uglify = require("uglify-js");
+
+var cwd = process.cwd(),
+    build = path.join(cwd, "build"),
+    package = require(path.join(cwd, "package.json")),
+    name = package.name;
+
+var preamble = "// " + (package.homepage || package.name)
+    + " Version " + package.version + "."
+    + " Copyright " + (new Date).getFullYear()
+    + " " + package.author.name + (/\.$/.test(package.author.name) ? "" : ".");
+
+console.warn(`uglify: build/${name}.js ↦ build/${name}.min.js`);
+
+var result = uglify.minify(fs.readFileSync(path.join(cwd, "build", `${name}.js`), "utf8"), {
+  output: {
+    beautify: false,
+    preamble: preamble
+  }
+});
+
+if (result.error) throw result.error;
+
+fs.writeFileSync(path.join(cwd, "build", `${name}.min.js`), result.code, "utf8");

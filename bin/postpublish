@@ -1,0 +1,3 @@
+#!/bin/bash
+
+# git push && git push --tags && zip -j build/d3-timer.zip -- LICENSE README.md build/d3-timer.js build/d3-timer.min.js
